@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas Status</title>
+    {% if refresh_interval %}
+    <meta http-equiv="refresh" content="{{ refresh_interval }}">
+    {% endif %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #080c10;
+            --bg2: #0d1117;
+            --bg3: #161b22;
+            --border: #21262d;
+            --border-bright: #30363d;
+            --cyan: #39d0d8;
+            --cyan-dim: #0e4a4e;
+            --blue: #4493f8;
+            --green: #3fb950;
+            --red: #f85149;
+            --amber: #d29922;
+            --text: #e6edf3;
+            --text-dim: #484f58;
+            --text-mid: #8b949e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            background-image:
+                linear-gradient(rgba(57,208,216,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(57,208,216,0.015) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .mono { font-family: 'Space Mono', monospace; }
+
+        /* Header */
+        header {
+            border-bottom: 1px solid var(--border);
+            padding: 0 1.5rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(8,12,16,0.95);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--cyan);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .last-updated {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .refresh-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--cyan);
+            background: transparent;
+            border: 1px solid var(--cyan-dim);
+            border-radius: 4px;
+            padding: 0.3rem 0.75rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(57,208,216,0.1);
+            border-color: var(--cyan);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* Section title */
+        .section-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Stat strip */
+        .stat-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-cell {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .stat-cell .val {
+            font-family: 'Space Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--cyan);
+            line-height: 1;
+        }
+
+        .stat-cell .lbl {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-top: 0.35rem;
+        }
+
+        /* Container card */
+        .container-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            transition: border-color 0.15s;
+        }
+
+        .container-card:hover { border-color: var(--border-bright); }
+
+        .container-header {
+            padding: 1rem 1.25rem;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+        }
+
+        /* Status indicator */
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-running {
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(63,185,80,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .status-stopped { background: var(--text-dim); }
+        .status-exited { background: var(--red); }
+
+        .container-name {
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .container-image {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 2px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Metrics row */
+        .metrics-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .metric-chip {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            color: var(--text-mid);
+            white-space: nowrap;
+        }
+
+        .metric-chip span {
+            color: var(--cyan);
+        }
+
+        /* Port links */
+        .port-link {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            background: rgba(57,208,216,0.08);
+            border: 1px solid var(--cyan-dim);
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            color: var(--cyan);
+            text-decoration: none;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .port-link:hover {
+            background: rgba(57,208,216,0.18);
+            border-color: var(--cyan);
+        }
+
+        /* Memory bar */
+        .mem-bar-wrap {
+            background: var(--bg3);
+            border-radius: 2px;
+            height: 3px;
+            width: 80px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+
+        .mem-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--cyan);
+            transition: width 0.3s;
+        }
+
+        .mem-bar-fill.high { background: var(--red); }
+        .mem-bar-fill.med { background: var(--amber); }
+
+        /* Expand arrow */
+        .expand-arrow {
+            font-size: 12px;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .container-card.open .expand-arrow { transform: rotate(180deg); }
+
+        /* Log section */
+        .log-section {
+            display: none;
+            border-top: 1px solid var(--border);
+            padding: 1rem 1.25rem;
+            background: var(--bg);
+        }
+
+        .container-card.open .log-section { display: block; }
+
+        .log-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        .log-lines {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            color: var(--text-mid);
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #020408;
+            padding: 0.75rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .log-lines::-webkit-scrollbar { width: 4px; }
+        .log-lines::-webkit-scrollbar-track { background: transparent; }
+        .log-lines::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+        /* Network table */
+        .network-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .network-table th {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            text-align: left;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .network-table td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--bg3);
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            color: var(--text-mid);
+        }
+
+        .network-table tr:last-child td { border-bottom: none; }
+
+        /* Stopped containers section */
+        .stopped-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0.6;
+        }
+
+        /* Error state */
+        .error-box {
+            background: rgba(248,81,73,0.08);
+            border: 1px solid rgba(248,81,73,0.3);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .error-box h2 {
+            font-family: 'Space Mono', monospace;
+            color: var(--red);
+            margin-bottom: 0.5rem;
+        }
+
+        .error-box p {
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+
+        /* Countdown bar */
+        .countdown-wrap {
+            height: 2px;
+            background: var(--bg3);
+            margin-bottom: 1.5rem;
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .countdown-fill {
+            height: 100%;
+            background: var(--cyan);
+            border-radius: 1px;
+            animation: countdown 30s linear forwards;
+        }
+
+        @keyframes countdown {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        /* Empty state */
+        .empty {
+            color: var(--text-dim);
+            font-size: 13px;
+            padding: 1.5rem;
+            text-align: center;
+            font-family: 'Space Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="brand-dot"></div>
+            Atlas / Status
+        </div>
+        <div class="header-right">
+            <span class="last-updated mono">Updated {{ last_updated }}</span>
+            <a href="/" class="refresh-btn">↺ Refresh</a>
+        </div>
+    </header>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        function toggleCard(el) {
+            el.closest('.container-card').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

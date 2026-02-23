@@ -1,0 +1,26 @@
+services:
+  atlas-status:
+    build: .
+    container_name: atlas-status
+    ports:
+      - "5003:5000"
+
+    # ── The Socket Mount ──────────────────────────────────────────────────────
+    # This is the key concept for this app.
+    # We mount the Docker daemon's Unix socket from zeus01 into the container.
+    # This gives our Flask app the ability to talk to dockerd directly —
+    # the same way the docker CLI does.
+    #
+    # Interview answer: "I mounted the Docker socket so the app could query
+    # the daemon via the SDK. It's read-only — the container can observe
+    # but not control other containers."
+    #
+    # Security note: socket access = full daemon access. Read-only mode
+    # limits filesystem writes but not Docker API calls. In production,
+    # use Docker Socket Proxy to restrict which API endpoints are exposed.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
