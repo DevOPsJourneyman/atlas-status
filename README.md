@@ -38,32 +38,32 @@ docker run -d -p 5003:5000 \
 Open `http://localhost:5003`
 
 ## Atlas Lab Deployment
-
 ```bash
-git clone https://github.com/DevOpsJourneyman/atlas-status
-cd atlas-status
-docker compose up -d --build
+kubectl apply -f kubernetes/
 ```
 
-Running at `http://192.168.0.24:5003`
+**Note:** Docker socket monitoring is unavailable in k3s (containerd runtime — no Docker daemon). Dashboard shows daemon unreachable when deployed on the cluster. Fix tracked as a GitHub issue — planned migration to Kubernetes API.
+
+See [atlas-lab](https://github.com/DevOpsJourneyman/atlas-lab) for infrastructure details.
 
 ## Tech Stack
 
 - Python / Flask
 - Docker SDK for Python (`docker==7.1.0`)
-- Socket mount — no database needed, data comes live from the daemon
+- Socket mount — queries live data from the Docker daemon
 - Docker + Docker Compose
-- Ubuntu Server VM on Proxmox (Atlas Lab)
+- Kubernetes (k3s) — Deployment, Service
+- Ubuntu Server VMs on Proxmox (Atlas Lab)
 
 ## Atlas Lab — Full Stack
 
-| App | Port | Purpose |
+| App | NodePort | Purpose |
 |---|---|---|
-| atlas-nutrition-tracker | 5001 | Meal tracking + shopping lists |
-| atlas-dojo | 5002 | DevOps interview prep (spaced repetition) |
-| atlas-status | 5003 | Container monitoring dashboard |
+| atlas-nutrition-tracker | 30505 | Meal tracking + shopping lists |
+| atlas-dojo | 30502 | DevOps interview prep (spaced repetition) |
+| atlas-status | 30504 | Container monitoring dashboard |#
 
 ## Part of the DevOps Roadmap
 
-**Week:** 2 — Docker Fundamentals  
-Capstone project introducing the Docker daemon, Unix sockets, and the Docker SDK for Python. Completes the Week 2 trilogy alongside atlas-nutrition-tracker and atlas-dojo.
+**Weeks:** 2 (Docker) · 3–4 (Kubernetes)  
+Portfolio goal: Demonstrate Docker daemon interaction via socket mount, Python SDK usage, and Kubernetes deployment. Known limitation: socket monitoring unavailable in k3s — tracked as an open issue.
