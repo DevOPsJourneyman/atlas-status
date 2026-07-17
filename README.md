@@ -24,7 +24,7 @@ The Docker daemon communicates via a Unix socket at `/var/run/docker.sock`. By m
 
 `:ro` mounts the socket read-only at the filesystem level. This is a security best practice.
 
-**Interview answer:** *"I mounted the Docker socket so the monitoring app could query the daemon via the Python SDK. I'm aware this grants broad API access, and in production I'd front it with a Docker Socket Proxy to restrict which endpoints are exposed."*
+Mounting the socket grants broad API access; in production this would be fronted with a Docker Socket Proxy to restrict which endpoints are exposed.
 
 ## Quick Start
 
